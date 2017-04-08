@@ -1,6 +1,4 @@
 # gt-cp-2017-project
-Final Project: (Dhiraj Dhule + Tasuku Miura)
-
 
 Implementation: Mori, T., Scherer, S. [First Results in Detecting and Avoiding Frontal Obstacles from
 a Monocular Camera for Micro Unmanned Aerial
