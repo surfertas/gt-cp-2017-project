@@ -4,11 +4,17 @@ Algorithm 1: The scale expansion detector algorithm. This algorithm matches,
 filters, and calculates, the expansion of relevant ORB features in consecutive
 images.
 """
+import os
+import errno
 import numpy as np
 import scipy as sp
 import cv2
 
 #import template matching algorithm
+
+SRC_FOLDER = "input/test"
+OUT_FOLDER = "output"
+EXTENSIONS = set(["jpeg", "jpg", "png"])
 
 
 class ScaleExpansionDetector(object):
@@ -16,6 +22,7 @@ class ScaleExpansionDetector(object):
     def __init__(self):
         #Need to figure out what to share, kp?
         #array of keypoints?
+        pass
 
     def get_orb_matches(self, img_cur, img_prv):
         """
@@ -62,12 +69,36 @@ class ScaleExpansionDetector(object):
 
 
 #Helper functions for prototyping
-#1. load images
+def load_images(): 
+    """
+    Loads images from SRC_FOLDER and creates an array of images, with allowed
+    extensions defined in EXTENSIONS.
+    Returns:
+        img_stack - [image]: List of images.
+    """
+    src_contents = os.walk(SRC_FOLDER)
+    dirpath, _, fnames = src_contents.next()
 
+    image_dir = os.path.split(dirpath)[-1]
+    output_dir = os.path.join(OUT_FOLDER, image_dir)
 
+    try:
+        os.makedirs(output_dir)
+    except OSError as exception:
+        if exception.errno != errno.EEXIST:
+            raise
+
+    image_files = sorted([os.path.join(dirpath, name) for name in fnames])
+
+    img_stack = [cv2.imread(name) for name in image_files
+                if os.path.splitext(name)[-1][1:].lower() in EXTENSIONS]
+
+    return img_stack
 
 def main():
-    pass
+    #  Loads images correctly
+    proxy_flight_imgs = load_images()
+    print(len(proxy_flight_imgs)) 
 
 
 if __name__=="__main__":
