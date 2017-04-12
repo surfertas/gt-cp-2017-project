@@ -12,8 +12,13 @@ namespace mono_ob_av {
         MonoObsAvoid(ros::NodeHandle&);
     
         virtual ~MonoObsAvoid();
-
+    
+        
+        getCameraImage();
     private:
+        void registerPublisher();
+        void registerSubscriber();
+        
         ros::NodeHandle nh_;
     }
 }    
