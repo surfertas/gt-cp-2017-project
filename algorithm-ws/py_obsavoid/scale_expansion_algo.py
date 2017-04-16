@@ -1,71 +1,85 @@
-#!/usr/bin python
+#!/usr/bin/env python
 """
 Algorithm 1: The scale expansion detector algorithm. This algorithm matches,
 filters, and calculates, the expansion of relevant ORB features in consecutive
 images.
 """
 import os
+import argparse
+
 import errno
 import numpy as np
 import scipy as sp
 import cv2
 
+from algo_util import show_kp
+
 #import template matching algorithm
 
-SRC_FOLDER = "input/test"
+SRC_FOLDER = "input/test_diff"
 OUT_FOLDER = "output"
 EXTENSIONS = set(["jpeg", "jpg", "png"])
 
 
+
 class ScaleExpansionDetector(object):
     
-    def __init__(self):
-        #Need to figure out what to share, kp?
-        #array of keypoints?
-        pass
+
+    def __init__(self, test=False):
+        self.test = test        # true if in testing env
+
+        self.matches = None     # type: list of cv2.DMath
+        self.kp1 = None         # type: list of cv2.KeyPoint items
+        self.des1 = None        # type: numpy.ndarray of numpy.uint8 values.
+        self.kp2 = None         # type: list of cv2.KeyPoint items.
+        self.des2 = None        # type: numpy.ndarray of numpy.uint8 values.
+
+        self.bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+        self.orb = cv2.ORB_create(nfeatures=500, 
+                                  scaleFactor=1.2, 
+                                  WTA_K=2, 
+                                  scoreType=cv2.ORB_HARRIS_SCORE, 
+                                  patchSize=31)
 
     def get_orb_matches(self, img_cur, img_prv):
-        """
-        Finds keypoints and matches between current image and previous image.
+        """ Finds keypoints, matches between current image and previous image.
 
         Params: 
             img_cur - numpy.darray: Current image (grayscale)
             img_prv - numpy.darray: Previous image (grayscale)
-        Returns:
-            kp1 - [cv2.Keypoint]: Keypoints for current image.
-            kp2 - [cv2.Keypoint]: Keypoints for previous image.
-            matches - [cv2.Dmath]: All keypoint matches found.
         """
-        matches = None      # type: list of cv2.DMath
-        kp1 = None          # type: list of cv2.KeyPoint items
-        des1 = None         # type: numpy.ndarray of numpy.uint8 values.
-        kp2 = None          # type: list of cv2.KeyPoint items.
-        des2 = None         # type: numpy.ndarray of numpy.uint8 values.
+        self.kp1, self.des1 = self.orb.detectAndCompute(img_cur, None)
+        self.kp2, self.des2 = self.orb.detectAndCompute(img_prv, None)
 
-        orb = cv2.ORB_create(nfeatures=500, 
-                             scaleFactor=1.2, 
-                             WTA_K=2, 
-                             scoreType=cv2.ORB_HARRIS_SCORE, 
-                             patchSize=31)
+        self.matches = sorted(self.bf.match(self.des1, self.des2), 
+                              key = lambda m: m.distance)
+        if self.test:
+            show_kp(img_cur, self.kp1, img_prv, self.kp2, self.matches, 
+                    "matches", OUT_FOLDER)
 
-        kp1, des1 = orb.detectAndCompute(img_cur, None)
-        kp2, des2 = orb.detectAndCompute(img_prv, None)
-        bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-        matches = sorted(bf.match(des1, des2), key = lambda m: m.distance)
-
-        return kp1, kp2, matches
-
-    def discard_miss_match(self):
-        pass
+    def discard_miss_match(self, threshold):
+        """ Filters the matches by distance attribute of the matches.
+        Params:
+            threshold - float: Threshold for match.distance.
+        """
+        self.matches = [m for m in self.matches if m.distance > threshold]
 
     def discard_size_thresh(self):
-        pass
+        """ Filters the matches by the size of the keypoints.
+        """
+        #queryIdx is 1st parameter, trainIdx is 2nd parameter
+        self.matches = [m 
+                        for m in self.matches 
+                        if self.kp1[m.queryIdx].size > self.kp2[m.trainIdx].size
+                       ]
 
     def confirm_scale(self):
         pass
 
     def calculate_eps(self):
         pass
+
+
 
 
 #Helper functions for prototyping
@@ -96,10 +110,30 @@ def load_images():
     return img_stack
 
 def main():
-    #  Loads images correctly
-    proxy_flight_imgs = load_images()
-    print(len(proxy_flight_imgs)) 
+    parser = argparse.ArgumentParser(description='Monocular Obstacle Avoidance')
+    parser.add_argument('--dist_thresh', '-d', type=float, default=0.25,
+                        help='Sets the distance threshold for match filtering')
+    args = parser.parse_args()
 
+    # Only two images in test folder to index [0] needed.
+    flight_imgs = load_images()
+    curr = flight_imgs[:-1]
+    prev = flight_imgs[1:]
+
+    curprev_tpl = zip(curr, prev)
+    algo = ScaleExpansionDetector(test=True)
+
+    # Just for testing, checking if kp are being filtered.
+    for pair in curprev_tpl:
+        algo.get_orb_matches(*pair)
+        print "after orb: {}".format(len(algo.matches))
+        algo.discard_miss_match(args.dist_thresh)
+        print "after miss: {}".format(len(algo.matches))
+        algo.discard_size_thresh()
+        print "after_size: {}".format(len(algo.matches))
+ 
+
+    
 
 if __name__=="__main__":
     main()
