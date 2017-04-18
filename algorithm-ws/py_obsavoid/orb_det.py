@@ -1,32 +1,3 @@
-# ASSIGNMENT 7
-# Your Name
-
-""" Assignment 7 - Feature Detection and Matching
-
-This file has a number of functions that you need to fill out in order to
-complete the assignment. Please write the appropriate code, following the
-instructions on which functions you may or may not use.
-
-GENERAL RULES:
-    1. DO NOT INCLUDE code that saves, shows, displays, writes the image that
-    you are being passed in. Do that on your own if you need to save the images
-    but these functions should NOT save the image to disk.
-
-    2. DO NOT import any other libraries aside from those that we provide.
-    You should be able to complete the assignment with the given libraries
-    (and in many cases without them).
-
-    3. DO NOT change the format of this file. You may NOT change function
-    type signatures (not even named parameters with defaults). You may add
-    additional code to this file at your discretion, however it is your
-    responsibility to ensure that the autograder accepts your submission.
-
-    4. This file has only been tested in the course virtual environment.
-    You are responsible for ensuring that your code executes properly in the
-    virtual machine environment, and that any changes you make outside the
-    areas annotated for student code do not impact your performance on the
-    autograder system.
-"""
 import numpy as np
 import scipy as sp
 import cv2
