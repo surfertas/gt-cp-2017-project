@@ -1,3 +1,9 @@
+To test,
+edit main.py for camera settings.
+Then run
+python main.py
+
+
 Todo
 
 1. Write a better method to visualize the matches. 
