@@ -33,6 +33,7 @@ class ScaleExpansionDetector(object):
         self.des1 = None        # type: numpy.ndarray of numpy.uint8 values.
         self.kp2 = None         # type: list of cv2.KeyPoint items.
         self.des2 = None        # type: numpy.ndarray of numpy.uint8 values.
+        self.pair2int = lambda pt: (int(pt[0]), int(pt[1]))
 
         self.bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
         self.orb = cv2.ORB_create(nfeatures=500,
@@ -77,25 +78,70 @@ class ScaleExpansionDetector(object):
                         if self.kp1[m.queryIdx].size > self.kp2[m.trainIdx].size
                         ]
 
+    def get_template_coord(self, rbnd, cbnd, keypoint, scale=1):
+        r, c = self.pair2int(keypoint.pt)
+        size = (keypoint.size * 1.2 / 9 * 20) * scale
+        size = int(size * 0.5)
+        r0 = np.max([0, r - size])
+        r1 = np.min([rbnd, r + size])
+        c0 = np.max([0, c - size])
+        c1 = np.min([cbnd, c + size])
+        corners = np.array([r0,r1,c0,c1])
+        if (np.any(corners == 0) 
+        or np.any(corners == rbnd) 
+        or np.any(corners == cbnd)):
+            print("edge")
+            return 0,0,0,0
+        
+        return r0,r1,c0,c1
+
     def confirm_scale(self):
-        pair2int = lambda pt: (int(pt[0]), int(pt[1]))
         rimg, cimg, _ = self.img_prv.shape
+        obstacle = []
         for m in self.matches:
-            r, c = pair2int(self.kp2[m.trainIdx].pt)
-            size = int((self.kp2[m.trainIdx].size * 1.2 / 9 * 20) * 0.5)
-            r0 = np.max([0, r - size])
-            r1 = np.min([rimg, r + size])
-            c0 = np.max([0, c - size])
-            c1 = np.min([cimg, c + size])
-            template1 = self.img_prv[r0:r1, c0:c1]
+            (
+            t1r0,t1r1,t1c0,t1c1
+            ) = self.get_template_coord(rimg, cimg, self.kp2[m.trainIdx])
+            print  t1r0,t1r1,t1c0,t1c1
+
+            if np.all(np.array([t1r0, t1r1, t1c0, t1c1]) == 0):
+                continue
+            
+            template1 = self.img_prv[t1r0:t1r1, t1c0:t1c1]
+            TMmin = np.inf
+            smin = 1.0
             for scale in [1.0, 1.1, 1.2, 1.3, 1.4, 1.5]:
-                scaled = imresize(template1, scale)
-                print scaled.shape
+                print np.array(template1).shape
+                template1 = imresize(template1, scale)
+                (
+                t2r0,t2r1,t2c0,t2c1
+                ) = self.get_template_coord(rimg, cimg, self.kp1[m.queryIdx], scale)
 
-        # NOTE: incomplete, still WIP.
+                template2 = self.img_cur[t2r0:t2r1, t2c0:t2c1]
+                print np.array(template2).shape
+                TMscale = np.mean(np.square(template1 - template2))
 
-    def calculate_eps(self):
-        pass
+                if scale == 1.0:
+                    TMone = TMscale
+
+                if TMscale < TMmin:
+                    TMmin = TMscale
+                    smin = scale
+            
+            if smin > 1.2 and TMmin < 0.8*TMone:
+                obstacle.append(m)
+                
+        self.matches = obstacle
+
+    def get_obstacle_position(self):
+        rtmp, ctmp = [],[]
+        for m in self.matches:
+            r, c = self.pair2int(self.kp1[m.queryIdx].pt)
+            rtmp.append(r)
+            ctmp.append(c)
+        return int(np.mean(rtmp)), int(np.mean(ctmp))
+        
+        
 
 
 # Helper functions for prototyping
@@ -150,6 +196,8 @@ def main():
         algo.discard_size_thresh()
         print "after_size: {}".format(len(algo.matches))
         algo.confirm_scale()
+        print "after_size: {}".format(len(algo.matches))
+
 
 if __name__ == "__main__":
     main()
