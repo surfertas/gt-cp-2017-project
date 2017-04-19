@@ -79,56 +79,46 @@ class ScaleExpansionDetector(object):
                         ]
 
     def get_template_coord(self, rbnd, cbnd, keypoint, scale=1):
+        # Helper function
         r, c = self.pair2int(keypoint.pt)
-        size = (keypoint.size * 1.2 / 9 * 20) * scale
-        size = int(size * 0.5)
+        size = int((keypoint.size * 1.2 / 9 * 20) * scale//2)
         r0 = np.max([0, r - size])
         r1 = np.min([rbnd, r + size])
         c0 = np.max([0, c - size])
         c1 = np.min([cbnd, c + size])
-        corners = np.array([r0,r1,c0,c1])
-        if (np.any(corners == 0) 
-        or np.any(corners == rbnd) 
-        or np.any(corners == cbnd)):
-            print("edge")
-            return 0,0,0,0
-        
-        return r0,r1,c0,c1
+        return (r0, r1, c0, c1)
 
     def confirm_scale(self):
         rimg, cimg, _ = self.img_prv.shape
         obstacle = []
         for m in self.matches:
             (
-            t1r0,t1r1,t1c0,t1c1
+            t1r0, t1r1, t1c0, t1c1
             ) = self.get_template_coord(rimg, cimg, self.kp2[m.trainIdx])
-            print  t1r0,t1r1,t1c0,t1c1
-
-            if np.all(np.array([t1r0, t1r1, t1c0, t1c1]) == 0):
-                continue
             
-            template1 = self.img_prv[t1r0:t1r1, t1c0:t1c1]
+            trntemplate = self.img_prv[t1r0:t1r1, t1c0:t1c1]
             TMmin = np.inf
             smin = 1.0
             for scale in [1.0, 1.1, 1.2, 1.3, 1.4, 1.5]:
-                print np.array(template1).shape
-                template1 = imresize(template1, scale)
+                trntemplate = imresize(trntemplate, scale)
                 (
-                t2r0,t2r1,t2c0,t2c1
+                t2r0, t2r1, t2c0, t2c1
                 ) = self.get_template_coord(rimg, cimg, self.kp1[m.queryIdx], scale)
 
-                template2 = self.img_cur[t2r0:t2r1, t2c0:t2c1]
-                print np.array(template2).shape
-                TMscale = np.mean(np.square(template1 - template2))
+                qrytemplate = self.img_cur[t2r0:t2r1, t2c0:t2c1]
+                qrytemplate = imresize(qrytemplate, (trntemplate.shape))
+
+                TMscale = np.mean(np.square(trntemplate - qrytemplate))
 
                 if scale == 1.0:
                     TMone = TMscale
-
+                
                 if TMscale < TMmin:
                     TMmin = TMscale
                     smin = scale
             
-            if smin > 1.2 and TMmin < 0.8*TMone:
+            # NOTE: Paper uses 0.8 * TMone but that results in zero obstacles.
+            if smin > 1.2 and TMmin < 1.0*TMone:
                 obstacle.append(m)
                 
         self.matches = obstacle
