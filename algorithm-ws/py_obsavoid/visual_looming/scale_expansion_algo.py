@@ -25,21 +25,6 @@ class ScaleExpansionDetector(object):
         self.test = test
         self.pair2int = lambda pt: (int(pt[0]), int(pt[1]))
 
-    def discard_miss_match(self, threshold):
-        """ Filters the matches by distance attribute of the matches.
-        Params:
-            threshold - float: Threshold for match.distance.
-        """
-        self.matches = [m for m in self.matches if m.distance > threshold]
-
-    def discard_size_thresh(self):
-        """ Filters the matches by the size of the keypoints.
-        """
-        # queryIdx is 1st parameter, trainIdx is 2nd parameter
-        self.matches = [m
-                        for m in self.matches
-                        if self.kp1[m.queryIdx].size > self.kp2[m.trainIdx].size
-                        ]
 
     def get_template_coord(self, rbnd, cbnd, keypoint, scale=1):
         # Helper function

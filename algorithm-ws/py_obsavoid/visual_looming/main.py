@@ -10,7 +10,7 @@ from visualizer import show_kp, drawMatches
 class TrackingTest(object):
     """extends all pieces needed for experimentation so that any test case can be implemented"""
 
-    def __init__(self, cap_dev, tracker, visualation, debug=False):
+    def __init__(self, cap_dev, tracker, visualation, dist_thresh, debug=False):
         self.cap = cv2.VideoCapture(cap_dev)
         self.setup_camera()
         # todo come down to standard specification of tracker class
@@ -18,6 +18,7 @@ class TrackingTest(object):
         self.template = None
         self.visual = visualation
         self.debug = debug
+        self.dist_thresh = dist_thresh
 
     def setup_camera(self, width=1920, height=1280, fps=30):
         """ to configure for specific cam. Defaults set for Intel Realsense camera """
@@ -30,7 +31,8 @@ class TrackingTest(object):
         """this function would be useful for real time update
          of the template and multi instance version of application"""
 
-        ret, temp = self.cap.read()
+        for i in range(20):
+            ret, temp = self.cap.read()
         if ret:
             self.template = temp
             return self.template
@@ -45,8 +47,19 @@ class TrackingTest(object):
         :return Matched image with the template
         For now let's use the drawMatches from a7. Going forward we will need better method.
         """
-        k1, k2, matches = self.orb.findMatchesBetweenImages(self.template, img)
-        annotated_matches = self.visual(self.template, k1, img, k2, matches).astype(np.uint8)
+        self.orb.findMatchesBetweenImages(self.template, img)
+        self.orb.discard_miss_match(threshold=self.dist_thresh)
+        self.orb.discard_size_thresh()
+
+        # uncomment if want to use drawmatches from a7
+        # annotated_matches = self.visual(self.template, self.orb.kp1, img, self.orb.kp2, self.orb.matches).astype(np.uint8)
+
+        # uncomment if want to use cv2.drawmatches
+        # http://docs.opencv.org/3.0-beta/modules/features2d/doc/drawing_function_of_keypoints_and_matches.html
+        annotated_matches = None
+        annotated_matches = self.visual(self.template, self.orb.kp1, img, self.orb.kp2, self.orb.matches,
+                                        annotated_matches, flags=2)
+
         return annotated_matches
 
     def skip_frames(self, frames):
@@ -64,14 +77,21 @@ class TrackingTest(object):
 
 def test_on_camera(dist_thresh, debug=False):
     """ use this setup method to setup everything on the live camera input"""
-    test = TrackingTest(0, orb.OrbTracker, show_kp)
+    # test = TrackingTest(0, orb.OrbTracker, drawMatches, dist_thresh=dist_thresh, debug=True)
+    test = TrackingTest(0, orb.OrbTracker, cv2.drawMatches, dist_thresh=dist_thresh, debug=True)
+    # test = TrackingTest(0, orb.OrbTracker, show_kp, dist_thresh=dist_thresh)
     test.skip_frames(10)
     test.update_template()
     while test.cap.isOpened():
         img = test.grab_next_img()
         match = test.process_next_image(img)
+
         if debug:
-            cv2.imshow("matches", match)
+            # resize image
+            scale_factor = 0.5
+            resized_match = cv2.resize(src=match, dsize=(int(match.shape[1] * scale_factor), match.shape[0]),
+                                       interpolation=cv2.INTER_AREA)
+            cv2.imshow("matches", resized_match)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     test.cap.release()
@@ -91,6 +111,10 @@ def test_on_video(dist_thresh, debug=False):
             break
     test.cap.release()
     cv2.destroyAllWindows()
+
+
+def test_on_set_of_images(dist_thresh, debug=False):
+    pass
 
 
 if __name__ == "__main__":

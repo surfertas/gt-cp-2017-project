@@ -5,26 +5,28 @@ import cv2
 
 class OrbTracker(object):
     def __init__(self):
-        pass
+        self.matches = None  # type: list of cv2.DMath
+        self.kp1 = None  # type: list of cv2.KeyPoint items
+        self.des1 = None  # type: numpy.ndarray of numpy.uint8 values.
+        self.kp2 = None  # type: list of cv2.KeyPoint items.
+        self.des2 = None  # type: numpy.ndarray of numpy.uint8 values.
+
+        self.orb = cv2.orb = cv2.ORB_create(nfeatures=400, scaleFactor=1.2, WTA_K=2, scoreType=cv2.ORB_HARRIS_SCORE,
+                                            patchSize=31, nlevels=8)  # alternate call required on some OpenCV versions
+        # TODO See if higher nlevels value does some good.
+        # TODO see if higher WTA_K does some good.
+        # http: // docs.opencv.org / trunk / db / d95 / classcv_1_1ORB.html  # details
+
+        self.bruteforce = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+        # TODO see if knnmatch, FLANN could do some good
+        # http://docs.opencv.org/3.0-beta/doc/py_tutorials/py_feature2d/py_matcher/py_matcher.html#brute-force-matching-with-sift-descriptors-and-ratio-test
 
     def findMatchesBetweenImages(self, image_1, image_2):
-        """ Return the top 10 list of matches between two input images.
+        """ Return the list of matches between two input images.
 
         This function detects and computes ORB features from the
         input images, and returns the best matches using the normalized Hamming
         Distance.
-
-        Follow these steps:
-        1. Compute ORB keypoints and descriptors for both images
-        2. Create a Brute Force Matcher, using the hamming distance (and set
-           crossCheck to true).
-        3. Compute the matches between both images.
-        4. Sort the matches based on distance so you get the best matches.
-        5. Return the image_1 keypoints, image_2 keypoints, and the top 10 matches
-           in a list.
-
-        Note: We encourage you use OpenCV functionality (also shown in lecture) to
-        complete this function.
 
         Parameters
         ----------
@@ -46,29 +48,26 @@ class OrbTracker(object):
             A list of matches, length 10. Each item in the list is of type
             cv2.DMatch.
         """
-        matches = None  # type: list of cv2.DMath
-        image_1_kp = None  # type: list of cv2.KeyPoint items
-        image_1_desc = None  # type: numpy.ndarray of numpy.uint8 values.
-        image_2_kp = None  # type: list of cv2.KeyPoint items.
-        image_2_desc = None  # type: numpy.ndarray of numpy.uint8 values.
 
-        # orb = cv2.ORB()
-        orb = cv2.orb = cv2.ORB_create(nfeatures=400, scaleFactor=1.2, WTA_K=2, scoreType=cv2.ORB_HARRIS_SCORE,
-                                       patchSize=31, nlevels=8)  # alternate call required on some OpenCV versions
+        self.kp1, self.des1 = self.orb.detectAndCompute(image_1, None)
+        self.kp2, self.des2 = self.orb.detectAndCompute(image_2, None)
 
+        self.matches = self.bruteforce.match(self.des1, self.des2)
+        self.matches = sorted(self.matches, key=lambda x: x.distance)
 
-        # WRITE YOUR CODE HERE.
-        image_1_kp, image_1_desc = orb.detectAndCompute(image_1, None)
-        image_2_kp, image_2_desc = orb.detectAndCompute(image_2, None)
+    def discard_miss_match(self, threshold):
+        """ Filters the matches by distance attribute of the matches.
+        Params:
+            threshold - float: Threshold for match.distance.
+        """
+        self.matches = [m for m in self.matches if m.distance > threshold]
 
-        # print "keypoints1:    ", len(image_1_kp), "    keypoints2:    ", len(image_2_kp)
-        bruteforce = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-
-        matches = bruteforce.match(image_1_desc, image_2_desc)
-
-        matches = sorted(matches, key=lambda x: x.distance)
-
-        # We coded the return statement for you. You are free to modify it -- just
-        # make sure the tests pass.
-        return image_1_kp, image_2_kp, matches[:10]
+    def discard_size_thresh(self):
+        """ Filters the matches by the size of the keypoints.
+        """
+        # queryIdx is 1st parameter, trainIdx is 2nd parameter
+        self.matches = [m
+                        for m in self.matches
+                        if self.kp1[m.queryIdx].size > self.kp2[m.trainIdx].size
+                        ]
 
