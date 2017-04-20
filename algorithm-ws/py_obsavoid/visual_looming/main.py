@@ -12,16 +12,19 @@ class TrackingTest(object):
 
     def __init__(self, cap_dev, tracker, visualation, dist_thresh, debug=False):
         self.cap = cv2.VideoCapture(cap_dev)
-        self.setup_camera()
         # todo come down to standard specification of tracker class
         self.orb = tracker()
         self.template = None
         self.visual = visualation
         self.debug = debug
         self.dist_thresh = dist_thresh
+        self.setup_camera()
 
     def setup_camera(self, width=1920, height=1280, fps=30):
         """ to configure for specific cam. Defaults set for Intel Realsense camera """
+        # Slow down fps for debugging.
+        fps=1 if self.debug else fps
+
         self.cap.set(3, width)  # width
         self.cap.set(4, height)  # height
         self.cap.set(5, fps)  # fps
@@ -79,7 +82,7 @@ def test_on_camera(dist_thresh, debug=False):
     """ use this setup method to setup everything on the live camera input"""
     # test = TrackingTest(0, orb.OrbTracker, drawMatches, dist_thresh=dist_thresh, debug=True)
     test = TrackingTest(0, orb.OrbTracker, cv2.drawMatches, dist_thresh=dist_thresh, debug=True)
-    # test = TrackingTest(0, orb.OrbTracker, show_kp, dist_thresh=dist_thresh)
+    #test = TrackingTest(0, orb.OrbTracker, show_kp, dist_thresh=dist_thresh)
     test.skip_frames(10)
     test.update_template()
     while test.cap.isOpened():
@@ -120,8 +123,10 @@ def test_on_set_of_images(dist_thresh, debug=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='Monocular Obstacle Avoidance')
-    parser.add_argument('--dist_thresh', '-d', type=float, default=0.25,
+    parser.add_argument('--thresh', '-t', type=float, default=0.25,
                         help='Sets the distance threshold for match filtering')
+    parser.add_argument('--debug', '-d', type=str, default=False,
+                        help='Sets real time camera.')
     args = parser.parse_args()
 
-    test_on_camera(args.dist_thresh, debug=True)
+    test_on_camera(args.thresh, args.debug)
