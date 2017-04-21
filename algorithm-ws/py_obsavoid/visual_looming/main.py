@@ -59,16 +59,13 @@ class TrackingTest(object):
 
         self.orb.discard_miss_match(threshold=self.dist_thresh)
         self.orb.discard_size_thresh()
-        # print len(self.orb.matches)
 
-        # todo create only one instance of this class, we can save on keypoint detection for image 1
         detector = ObstacleDetector(
             img, self.template, self.orb.matches, self.orb.kp1, self.orb.kp2)
         detector.confirm_scale()
 
         if detector.matches:
-            # print detector.obstacle_scale
-            # finding speed of approaching object.
+            # find speed of approaching object.
             # assuming that object becomes 1.5 times larger when comes from 3 meters to 2 meters.
             time_since_template_captured = timeit.default_timer() - self.template_cap_time
             avg_scale = np.mean(np.array(detector.obstacle_scale, dtype=float))
@@ -77,7 +74,7 @@ class TrackingTest(object):
             speed = float("{0:.2f}".format(speed)) * 100
 
             output = img[:, :]
-            # output = self.template[:, :]
+
             # add speed overlay
             font = cv2.FONT_HERSHEY_SIMPLEX
 
@@ -131,7 +128,7 @@ def test_on_camera(dist_thresh, fps, debug=False):
     test.template_cap_time = timeit.default_timer()
     elapsed = 0
     while test.cap.isOpened():
-        test.skip_frames(int(fps*elapsed))
+        test.skip_frames(int(fps * elapsed))
         start_time = timeit.default_timer()
 
         img = test.grab_next_img()
@@ -146,7 +143,6 @@ def test_on_camera(dist_thresh, fps, debug=False):
                 interpolation=cv2.INTER_AREA)
             cv2.imshow("matches", resized_match)
         elapsed = timeit.default_timer() - start_time
-        # print "time for loop ", elapsed
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     test.cap.release()
@@ -160,8 +156,8 @@ def test_on_video(video, dist_thresh, skip, debug=False):
     test.skip_frames(10)
     test.update_template()
 
-    avg_fps = 0
-    fps_records = []
+    # avg_fps = 0
+    # fps_records = []
     test.template_cap_time = timeit.default_timer()
 
     while test.cap.isOpened():
@@ -174,7 +170,7 @@ def test_on_video(video, dist_thresh, skip, debug=False):
 
         # elapsed = timeit.default_timer() - start_time
         # fps_records.append(elapsed)
-        avg_fps = 1.0 / (np.mean(np.array(fps_records, dtype=np.float)))
+        # avg_fps = 1.0 / (np.mean(np.array(fps_records, dtype=np.float)))
         # print "time for loop ", elapsed, "avg fps ", avg_fps
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -201,7 +197,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # for camera testing pass fps of camera instead of skip
+    # for camera testing pass actual fps of camera instead of skip
     # test_on_camera(args.thresh, args.skip, args.debug)
-    #
+
+    # for video testing the skip arg will decide obstacle speed, because total time since template capture is used
+    # to calculate the speed of obstacle.
     test_on_video(args.video, args.thresh, args.skip, args.debug)
