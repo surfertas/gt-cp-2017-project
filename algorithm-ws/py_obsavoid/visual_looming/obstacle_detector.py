@@ -115,8 +115,7 @@ class ObstacleDetector(object):
                     TMmin = TMscale
                     smin = scale
 
-            # NOTE: Paper uses 0.8 * TMone but that results in zero obstacles.
-            if smin > 1.2 and TMmin < 1.0 * TMone:
+            if smin > 1.2 and TMmin < 0.8 * TMone:
                 obstacle.append(m)
 
         self.matches = obstacle
