@@ -26,7 +26,16 @@ class ScaleExpansionDetector(object):
         self.pair2int = lambda pt: (int(pt[0]), int(pt[1]))
 
 
-    def get_template_coord(self, rbnd, cbnd, keypoint, scale=1):
+    def _get_template_coord(self, rbnd, cbnd, keypoint, scale=1):
+        """ Returns the corners of the template, relative to original image.
+        Params:
+            rbnd: Max row value of original image.
+            cbnd: Max col value of original image.
+            keypoint: keypoint used to get point, and size.
+            scale: scale multiplier used to scale template.
+        Returns:
+            r0, r1, c0, c1: Corner values of template.
+        """
         # Helper function
         r, c = self.pair2int(keypoint.pt)
         size = int((keypoint.size * 1.2 / 9 * 20) * scale // 2)
@@ -37,6 +46,14 @@ class ScaleExpansionDetector(object):
         return (r0, r1, c0, c1)
 
     def confirm_scale(self):
+        """ Scale algorithm that filters for scale variation.
+        
+        Creates a template from the previous image, and scales up the current
+        image using different scale factors. The algorithm fitlers out matches
+        that are determined not to be obstacles.
+        """
+        # Note: The paper uses a different function to compare the two
+        # templates, where this implementation uses MSE.
         rimg, cimg, _ = self.img_prv.shape
         obstacle = []
         for m in self.matches:
@@ -72,6 +89,10 @@ class ScaleExpansionDetector(object):
         self.matches = obstacle
 
     def get_obstacle_position(self):
+        """ Takes the average of the keypoint locations and returns the obstacle
+        location as single point.
+        Returns:    Obstacle point.
+        """
         rtmp, ctmp = [], []
         for m in self.matches:
             r, c = self.pair2int(self.kp1[m.queryIdx].pt)
