@@ -14,6 +14,7 @@ class TrackingTest(object):
         self.cap = cv2.VideoCapture(cap_dev)
         # todo come down to standard specification of tracker class
         self.orb = tracker()
+        self.obstacle_detector = ObstacleDetector()
         self.template = None
         self.visual = visualation
         self.debug = debug
@@ -50,17 +51,24 @@ class TrackingTest(object):
         :return Matched image with the template
         For now let's use the drawMatches from a7. Going forward we will need better method.
         """
+        # NOTE: Tasuku working on integrating scale expansion algo.
         self.orb.findMatchesBetweenImages(self.template, img)
         self.orb.discard_miss_match(threshold=self.dist_thresh)
         self.orb.discard_size_thresh()
-
+        
+        # NOTE: need to find a way to get previous image to use for prvimg in
+        # call to obstacle_detector.
+        detector = self.obstacle_detector(img, prvimg, self.orb.matches, self.orb.kp1, self.orb.kp2)
+        detector.confirm_scale()
+        
+        
         # uncomment if want to use drawmatches from a7
         # annotated_matches = self.visual(self.template, self.orb.kp1, img, self.orb.kp2, self.orb.matches).astype(np.uint8)
 
         # uncomment if want to use cv2.drawmatches
         # http://docs.opencv.org/3.0-beta/modules/features2d/doc/drawing_function_of_keypoints_and_matches.html
         annotated_matches = None
-        annotated_matches = self.visual(self.template, self.orb.kp1, img, self.orb.kp2, self.orb.matches,
+        annotated_matches = self.visual(self.template, self.orb.kp1, img, self.orb.kp2, self.detector.matches,
                                         annotated_matches, flags=2)
 
         return annotated_matches

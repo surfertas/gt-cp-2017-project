@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-The obstacle detector uses the scale expansion detector algorithm. 
-This algorithm matches, filters, and calculates, the expansion of relevant 
+The obstacle detector uses the scale expansion detector algorithm.
+This algorithm matches, filters, and calculates, the expansion of relevant
 ORB features in consecutive images.
 """
 import os
@@ -16,14 +16,16 @@ from scipy.misc import imresize
 from algo_util import show_kp
 
 
-
-
-
 class ObstacleDetector(object):
-    def __init__(self, test=False):
-        self.test = test
-        self.pair2int = lambda pt: (int(pt[0]), int(pt[1]))
 
+    def __init__(self, test=False, curimg, prvimg, matches, kp1, kp2):
+        self.test = test
+        self.img_cur = curimg
+        self.img_prv = prvimg
+        self.matches = matches
+        self.kp1 = kp1
+        self.kp2 = kp2
+        self.pair2int = lambda pt: (int(pt[0]), int(pt[1]))
 
     def _get_template_coord(self, rbnd, cbnd, keypoint, scale=1):
         """ Returns the corners of the template, relative to original image.
@@ -46,7 +48,7 @@ class ObstacleDetector(object):
 
     def confirm_scale(self):
         """ Scale algorithm that filters for scale variation.
-        
+
         Creates a template from the previous image, and scales up the current
         image using different scale factors. The algorithm fitlers out matches
         that are determined not to be obstacles.
@@ -58,7 +60,7 @@ class ObstacleDetector(object):
         for m in self.matches:
             (
                 t1r0, t1r1, t1c0, t1c1
-            ) = self.get_template_coord(rimg, cimg, self.kp2[m.trainIdx])
+            ) = self._get_template_coord(rimg, cimg, self.kp2[m.trainIdx])
 
             trntemplate = self.img_prv[t1r0:t1r1, t1c0:t1c1]
             TMmin = np.inf
@@ -67,7 +69,7 @@ class ObstacleDetector(object):
                 trntemplate = imresize(trntemplate, scale)
                 (
                     t2r0, t2r1, t2c0, t2c1
-                ) = self.get_template_coord(rimg, cimg, self.kp1[m.queryIdx], scale)
+                ) = self._get_template_coord(rimg, cimg, self.kp1[m.queryIdx], scale)
 
                 qrytemplate = self.img_cur[t2r0:t2r1, t2c0:t2c1]
                 qrytemplate = imresize(qrytemplate, (trntemplate.shape))
