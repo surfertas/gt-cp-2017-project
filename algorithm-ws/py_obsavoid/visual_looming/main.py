@@ -54,9 +54,6 @@ class TrackingTest(object):
         """
         # NOTE: image 1 = current image, image 2 = previous image.
         self.orb.findMatchesBetweenImages(img, self.template)
-        # for m in self.orb.matches:
-        #    c, r = self.orb.kp1[m.queryIdx].pt
-        # cv2.circle(output, (int(c),int(r)), 5, (255,255,255), thickness=-1)
 
         self.orb.discard_miss_match(threshold=self.dist_thresh)
         self.orb.discard_size_thresh()
