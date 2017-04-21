@@ -17,7 +17,6 @@ from algo_util import show_kp
 
 
 class ObstacleDetector(object):
-
     def __init__(self, curimg, prvimg, matches, kp1, kp2, test=False):
         self.test = test
         self.img_cur = curimg
@@ -26,6 +25,7 @@ class ObstacleDetector(object):
         self.kp1 = kp1
         self.kp2 = kp2
         self.pair2int = lambda pt: (int(pt[0]), int(pt[1]))
+        self.obstacle_scale = []
 
     def _get_template_coord(self, rbnd, cbnd, keypoint, scale=1):
         """ Returns the corners of the template, relative to original image.
@@ -64,9 +64,9 @@ class ObstacleDetector(object):
         c, r = self.pair2int(keypoint.pt)
         size = int((keypoint.size * 1.2 / 9 * 20) * 1.5 // 2)
         if (r - size < 0
-           or r + size > rbnd
-           or c - size < 0
-           or c + size > cbnd):
+            or r + size > rbnd
+            or c - size < 0
+            or c + size > cbnd):
             return False
         return True
 
@@ -81,6 +81,7 @@ class ObstacleDetector(object):
         # templates, where this implementation uses MSE.
         rimg, cimg, _ = self.img_prv.shape
         obstacle = []
+        obstacle_scale = []
         for m in self.matches:
 
             # Skips if key point not in region of interest.
@@ -94,7 +95,8 @@ class ObstacleDetector(object):
             trntemplate = self.img_prv[t1r0:t1r1, t1c0:t1c1]
             TMmin = np.inf
             smin = 1.0
-            for scale in [1.0, 1.1, 1.2, 1.3, 1.4, 1.5]:
+            # for scale in [1.0, 1.1, 1.2, 1.3, 1.4, 1.5]:
+            for scale in [1.0, 1.3, 1.5, 1.7, 1.9]:
                 if not self._filter_roi(rimg, cimg, self.kp1[m.queryIdx]):
                     continue
 
@@ -106,6 +108,7 @@ class ObstacleDetector(object):
                 qrytemplate = self.img_cur[t2r0:t2r1, t2c0:t2c1]
                 qrytemplate = imresize(qrytemplate, (trntemplate.shape))
 
+                # RMS error between two images
                 TMscale = np.mean(np.square(trntemplate - qrytemplate))
 
                 if scale == 1.0:
@@ -116,9 +119,11 @@ class ObstacleDetector(object):
                     smin = scale
 
             if smin > 1.2 and TMmin < 0.8 * TMone:
+                # print smin
                 obstacle.append(m)
-
+                obstacle_scale.append(smin)
         self.matches = obstacle
+        self.obstacle_scale = obstacle_scale
 
     def get_obstacle_position(self):
         """ Takes the average of the keypoint locations and returns the obstacle
