@@ -201,5 +201,5 @@ if __name__ == "__main__":
 
     # for camera testing pass fps of camera instead of skip
     test_on_camera(args.thresh, args.skip, args.debug)
-
+    #
     # test_on_video(args.video, args.thresh, args.skip, args.debug)
