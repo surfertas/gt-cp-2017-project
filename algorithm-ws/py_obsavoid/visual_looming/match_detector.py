@@ -16,10 +16,11 @@ class OrbTracker(object):
         # TODO See if higher nlevels value does some good.
         # TODO see if higher WTA_K does some good.
         # http: // docs.opencv.org / trunk / db / d95 / classcv_1_1ORB.html  # details
-
+        self.kp2_calculated = False # no need to calulate same again
         self.bruteforce = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
         # TODO see if knnmatch, FLANN could do some good
         # http://docs.opencv.org/3.0-beta/doc/py_tutorials/py_feature2d/py_matcher/py_matcher.html#brute-force-matching-with-sift-descriptors-and-ratio-test
+
 
     def findMatchesBetweenImages(self, image_1, image_2):
         """ Return the list of matches between two input images.
@@ -48,9 +49,10 @@ class OrbTracker(object):
             A list of matches, length 10. Each item in the list is of type
             cv2.DMatch.
         """
-
         self.kp1, self.des1 = self.orb.detectAndCompute(image_1, None)
-        self.kp2, self.des2 = self.orb.detectAndCompute(image_2, None)
+        if not self.kp2_calculated:
+            self.kp2, self.des2 = self.orb.detectAndCompute(image_2, None)
+            self.kp2_calculated = True
 
         self.matches = self.bruteforce.match(self.des1, self.des2)
         self.matches = sorted(self.matches, key=lambda x: x.distance)

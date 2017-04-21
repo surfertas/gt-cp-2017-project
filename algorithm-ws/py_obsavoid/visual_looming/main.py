@@ -1,4 +1,5 @@
 import argparse
+import timeit
 
 import numpy as np
 import cv2
@@ -22,7 +23,7 @@ class TrackingTest(object):
         self.dist_thresh = dist_thresh
         self.setup_camera()
 
-    def setup_camera(self, width=1920, height=1280, fps=30):
+    def setup_camera(self, width=1920, height=1280, fps=10):
         """ to configure for specific cam. Defaults set for Intel Realsense camera """
         # Slow down fps for debugging.
         fps = 1 if self.debug else fps
@@ -58,6 +59,7 @@ class TrackingTest(object):
         self.orb.discard_miss_match(threshold=self.dist_thresh)
         self.orb.discard_size_thresh()
 
+        # todo create only one instance of this class, we can save on keypoint detection for image 1
         detector = ObstacleDetector(
             img, self.template, self.orb.matches, self.orb.kp1, self.orb.kp2)
         detector.confirm_scale()
@@ -107,7 +109,9 @@ def test_on_camera(dist_thresh, skip, debug=False):
     test.skip_frames(10)
     test.update_template()
     while test.cap.isOpened():
-        test.skip_frames(skip)
+        # test.skip_frames(skip)
+        start_time = timeit.default_timer()
+
 
         img = test.grab_next_img()
         match = test.process_next_image(img)
@@ -120,6 +124,8 @@ def test_on_camera(dist_thresh, skip, debug=False):
                     int(match.shape[1] * scale_factor), match.shape[0]),
                                        interpolation=cv2.INTER_AREA)
             cv2.imshow("matches", resized_match)
+        elapsed = timeit.default_timer() - start_time
+        print "time for loop ", elapsed
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     test.cap.release()
@@ -132,12 +138,22 @@ def test_on_video(video, dist_thresh, skip, debug=False):
                         cv2.drawMatches, dist_thresh=dist_thresh, debug=True)
     test.skip_frames(10)
     test.update_template()
+
+    avg_fps= 0
+    fps_records = []
     while test.cap.isOpened():
         test.skip_frames(skip)
+        start_time = timeit.default_timer()
 
         img = test.grab_next_img()
         match = test.process_next_image(img)
         cv2.imshow("matches", match)
+
+        elapsed = timeit.default_timer() - start_time
+        fps_records.append(elapsed)
+        avg_fps = 1.0 / (np.mean(np.array(fps_records, dtype=np.float)))
+        print "time for loop ", elapsed, "avg fps ", avg_fps
+
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     test.cap.release()
@@ -161,6 +177,6 @@ if __name__ == "__main__":
                         help='Specifies the video to use for testing.')
 
     args = parser.parse_args()
-
+    # print args.debug
     # test_on_camera(args.thresh, args.skip, args.debug)
     test_on_video(args.video, args.thresh, args.skip, args.debug)
