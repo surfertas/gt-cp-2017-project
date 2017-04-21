@@ -5,16 +5,17 @@ import cv2
 
 import match_detector as orb  # code from assignment 7
 from visualizer import show_kp, drawMatches
+from obstacle_detector import ObstacleDetector
 
 
 class TrackingTest(object):
+
     """extends all pieces needed for experimentation so that any test case can be implemented"""
 
     def __init__(self, cap_dev, tracker, visualation, dist_thresh, debug=False):
         self.cap = cv2.VideoCapture(cap_dev)
         # todo come down to standard specification of tracker class
         self.orb = tracker()
-        self.obstacle_detector = ObstacleDetector()
         self.template = None
         self.visual = visualation
         self.debug = debug
@@ -24,7 +25,7 @@ class TrackingTest(object):
     def setup_camera(self, width=1920, height=1280, fps=30):
         """ to configure for specific cam. Defaults set for Intel Realsense camera """
         # Slow down fps for debugging.
-        fps=1 if self.debug else fps
+        fps = 1 if self.debug else fps
 
         self.cap.set(3, width)  # width
         self.cap.set(4, height)  # height
@@ -51,24 +52,28 @@ class TrackingTest(object):
         :return Matched image with the template
         For now let's use the drawMatches from a7. Going forward we will need better method.
         """
-        # NOTE: Tasuku working on integrating scale expansion algo.
-        self.orb.findMatchesBetweenImages(self.template, img)
+        # NOTE: image 1 = current image, image 2 = previous image.
+        self.orb.findMatchesBetweenImages(img, self.template)
         self.orb.discard_miss_match(threshold=self.dist_thresh)
         self.orb.discard_size_thresh()
-        
-        # NOTE: need to find a way to get previous image to use for prvimg in
-        # call to obstacle_detector.
-        detector = self.obstacle_detector(img, prvimg, self.orb.matches, self.orb.kp1, self.orb.kp2)
+
+        detector = ObstacleDetector(
+            img, self.template, self.orb.matches, self.orb.kp1, self.orb.kp2)
         detector.confirm_scale()
-        
-        
+        if detector.matches:
+            obstacle = detector.get_obstacle_position()
+            cv2.circle(img, obstacle, 5, (0, 255, 0), thickness=5)
+            cv2.circle(self.template, obstacle, 5, (0, 255, 0), thickness=5)
+
         # uncomment if want to use drawmatches from a7
-        # annotated_matches = self.visual(self.template, self.orb.kp1, img, self.orb.kp2, self.orb.matches).astype(np.uint8)
+        # annotated_matches = self.visual(self.template, self.orb.kp1, img,
+        # self.orb.kp2, self.orb.matches).astype(np.uint8)
 
         # uncomment if want to use cv2.drawmatches
         # http://docs.opencv.org/3.0-beta/modules/features2d/doc/drawing_function_of_keypoints_and_matches.html
         annotated_matches = None
-        annotated_matches = self.visual(self.template, self.orb.kp1, img, self.orb.kp2, self.detector.matches,
+        annotated_matches = self.visual(
+            img, self.orb.kp1, self.template, self.orb.kp2, detector.matches,
                                         annotated_matches, flags=2)
 
         return annotated_matches
@@ -88,9 +93,11 @@ class TrackingTest(object):
 
 def test_on_camera(dist_thresh, debug=False):
     """ use this setup method to setup everything on the live camera input"""
-    # test = TrackingTest(0, orb.OrbTracker, drawMatches, dist_thresh=dist_thresh, debug=True)
-    test = TrackingTest(0, orb.OrbTracker, cv2.drawMatches, dist_thresh=dist_thresh, debug=True)
-    #test = TrackingTest(0, orb.OrbTracker, show_kp, dist_thresh=dist_thresh)
+    # test = TrackingTest(0, orb.OrbTracker, drawMatches,
+    # dist_thresh=dist_thresh, debug=True)
+    test = TrackingTest(
+        0, orb.OrbTracker, cv2.drawMatches, dist_thresh=dist_thresh, debug=True)
+    # test = TrackingTest(0, orb.OrbTracker, show_kp, dist_thresh=dist_thresh)
     test.skip_frames(10)
     test.update_template()
     while test.cap.isOpened():
@@ -100,7 +107,9 @@ def test_on_camera(dist_thresh, debug=False):
         if debug:
             # resize image
             scale_factor = 0.5
-            resized_match = cv2.resize(src=match, dsize=(int(match.shape[1] * scale_factor), match.shape[0]),
+            resized_match = cv2.resize(
+                src=match, dsize=(
+                    int(match.shape[1] * scale_factor), match.shape[0]),
                                        interpolation=cv2.INTER_AREA)
             cv2.imshow("matches", resized_match)
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -111,7 +120,8 @@ def test_on_camera(dist_thresh, debug=False):
 
 def test_on_video(dist_thresh, debug=False):
     """use this setup method to setup everything on the video file input"""
-    test = TrackingTest('video_file.mp4', orb.OrbTracker, drawMatches)
+    test = TrackingTest('./test_vids/1.mp4', orb.OrbTracker,
+                        cv2.drawMatches, dist_thresh=dist_thresh, debug=True)
     test.skip_frames(10)
     test.update_template()
     while test.cap.isOpened():
@@ -137,4 +147,5 @@ if __name__ == "__main__":
                         help='Sets real time camera.')
     args = parser.parse_args()
 
-    test_on_camera(args.thresh, args.debug)
+    # test_on_camera(args.thresh, args.debug)
+    test_on_video(args.thresh, args.debug)

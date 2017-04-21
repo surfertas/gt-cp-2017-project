@@ -18,7 +18,7 @@ from algo_util import show_kp
 
 class ObstacleDetector(object):
 
-    def __init__(self, test=False, curimg, prvimg, matches, kp1, kp2):
+    def __init__(self, curimg, prvimg, matches, kp1, kp2, test=False):
         self.test = test
         self.img_cur = curimg
         self.img_prv = prvimg
@@ -38,13 +38,37 @@ class ObstacleDetector(object):
             r0, r1, c0, c1: Corner values of template.
         """
         # Helper function
-        r, c = self.pair2int(keypoint.pt)
+        c, r = self.pair2int(keypoint.pt)
         size = int((keypoint.size * 1.2 / 9 * 20) * scale // 2)
         r0 = np.max([0, r - size])
         r1 = np.min([rbnd, r + size])
         c0 = np.max([0, c - size])
         c1 = np.min([cbnd, c + size])
         return (r0, r1, c0, c1)
+
+    def _filter_roi(self, rbnd, cbnd, keypoint):
+        """ Tests if keypoint is in region of interest.
+        Note: Uses 1.5 (max scale) for checking.
+
+        Params:
+            rbnd: Max row value of original image.
+            cbnd: Max col value of original image.
+            keypoint: keypoint used to get point, and size.
+        Returns:
+            True if keypoint is in ROI, else False.
+
+        Note: Uses 1.5 (max scale) for checking.
+        """
+        # The assumption that we are making is that if keypoint is near edge
+        # then not an obstacle of interest.
+        c, r = self.pair2int(keypoint.pt)
+        size = int((keypoint.size * 1.2 / 9 * 20) * 1.5 // 2)
+        if (r - size < 0
+           or r + size > rbnd
+           or c - size < 0
+           or c + size > cbnd):
+            return False
+        return True
 
     def confirm_scale(self):
         """ Scale algorithm that filters for scale variation.
@@ -58,6 +82,11 @@ class ObstacleDetector(object):
         rimg, cimg, _ = self.img_prv.shape
         obstacle = []
         for m in self.matches:
+
+            # Skips if key point not in region of interest.
+            if not self._filter_roi(rimg, cimg, self.kp2[m.trainIdx]):
+                continue
+
             (
                 t1r0, t1r1, t1c0, t1c1
             ) = self._get_template_coord(rimg, cimg, self.kp2[m.trainIdx])
@@ -66,6 +95,9 @@ class ObstacleDetector(object):
             TMmin = np.inf
             smin = 1.0
             for scale in [1.0, 1.1, 1.2, 1.3, 1.4, 1.5]:
+                if not self._filter_roi(rimg, cimg, self.kp1[m.queryIdx]):
+                    continue
+
                 trntemplate = imresize(trntemplate, scale)
                 (
                     t2r0, t2r1, t2c0, t2c1
@@ -96,7 +128,7 @@ class ObstacleDetector(object):
         """
         rtmp, ctmp = [], []
         for m in self.matches:
-            r, c = self.pair2int(self.kp1[m.queryIdx].pt)
+            c, r = self.pair2int(self.kp1[m.queryIdx].pt)
             rtmp.append(r)
             ctmp.append(c)
-        return int(np.mean(rtmp)), int(np.mean(ctmp))
+        return int(np.mean(ctmp)), int(np.mean(rtmp))
