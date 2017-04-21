@@ -117,7 +117,7 @@ class TrackingTest(object):
             return None
 
 
-def test_on_camera(dist_thresh, skip, debug=False):
+def test_on_camera(dist_thresh, fps, debug=False):
     """ use this setup method to setup everything on the live camera input"""
     # test = TrackingTest(0, orb.OrbTracker, drawMatches,
     # dist_thresh=dist_thresh, debug=True)
@@ -127,9 +127,10 @@ def test_on_camera(dist_thresh, skip, debug=False):
     test.skip_frames(10)
     test.update_template()
     test.template_cap_time = timeit.default_timer()
+    elapsed = 0
     while test.cap.isOpened():
-        test.skip_frames(skip)
-        # start_time = timeit.default_timer()
+        test.skip_frames(int(fps*elapsed))
+        start_time = timeit.default_timer()
 
         img = test.grab_next_img()
         match = test.process_next_image(img)
@@ -142,8 +143,8 @@ def test_on_camera(dist_thresh, skip, debug=False):
                     int(match.shape[1] * scale_factor), match.shape[0]),
                 interpolation=cv2.INTER_AREA)
             cv2.imshow("matches", resized_match)
-        # elapsed = timeit.default_timer() - start_time
-        # print "time for loop ", elapsed
+        elapsed = timeit.default_timer() - start_time
+        print "time for loop ", elapsed
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     test.cap.release()
@@ -197,6 +198,8 @@ if __name__ == "__main__":
                         help='Specifies the video to use for testing.')
 
     args = parser.parse_args()
-    # print args.debug
-    # test_on_camera(args.thresh, args.skip, args.debug)
-    test_on_video(args.video, args.thresh, args.skip, args.debug)
+
+    # for camera testing pass fps of camera instead of skip
+    test_on_camera(args.thresh, args.skip, args.debug)
+
+    # test_on_video(args.video, args.thresh, args.skip, args.debug)
