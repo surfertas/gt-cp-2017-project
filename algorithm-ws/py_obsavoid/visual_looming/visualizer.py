@@ -3,6 +3,27 @@ import cv2
 import numpy as np
 
 
+def draw_output(all_matches, obs_matches, kp1, output):
+    """ Writes output image to file.
+    Params:
+        all_matches: All matches found from Orb matcher.
+        obs_matches: Matches after matches have been filtered.
+        kp1: Keypoints from image 1 (current image).
+        output: The keypoints will be drawn on output.
+    """
+    for m in all_matches:
+        c, r = kp1[m.queryIdx].pt
+        cv2.circle(output, (int(c), int(r)), int(
+            kp1[m.queryIdx].size), (255, 255, 255), thickness=1)
+
+    for m in obs_matches:
+        c, r = kp1[m.queryIdx].pt
+        cv2.circle(output, (int(c), int(r)), int(
+            kp1[m.queryIdx].size), (0, 0, 255), thickness=1)
+
+    cv2.imwrite("output.png", output)
+
+
 def show_kp(image1, kp1, image2, kp2, matches):
     """ Creates grid to show top 10 keypoints between two images.
     Params:
@@ -54,12 +75,12 @@ def show_kp(image1, kp1, image2, kp2, matches):
 
             tmp1[t1:d - b1, l1:d - r1] = img1[np.max(
                 [y1 - d / 2, 0]):np.min([y1 + d / 2, y1bnd]),
-                                         np.max([x1 - d / 2, 0]):np.min([x1 + d / 2, x1bnd]),
+                np.max([x1 - d / 2, 0]):np.min([x1 + d / 2, x1bnd]),
                                          channel]
 
             tmp2[t2:d - b2, l2:d - r2] = img2[np.max(
                 [y2 - d / 2, 0]):np.min([y2 + d / 2, y2bnd]),
-                                         np.max([x2 - d / 2, 0]):np.min([x2 + d / 2, x2bnd]),
+                np.max([x2 - d / 2, 0]):np.min([x2 + d / 2, x2bnd]),
                                          channel]
 
             # add to main grid to return
@@ -102,11 +123,11 @@ def drawMatches(image_1, image_1_keypoints, image_2, image_2_keypoints, matches)
     if num_channels == 1:
         for channel_idx in range(3):
             joined_image[:image_1.shape[0],
-            :image_1.shape[1],
-            channel_idx] = image_1
+                         :image_1.shape[1],
+                         channel_idx] = image_1
             joined_image[:image_2.shape[0],
-            image_1.shape[1] + margin:,
-            channel_idx] = image_2
+                         image_1.shape[1] + margin:,
+                         channel_idx] = image_2
     else:
         joined_image[:image_1.shape[0], :image_1.shape[1]] = image_1
         joined_image[:image_2.shape[0], image_1.shape[1] + margin:] = image_2
@@ -124,5 +145,3 @@ def drawMatches(image_1, image_1_keypoints, image_2, image_2_keypoints, matches)
         cv2.line(joined_image, image_1_point, image_2_point, rgb, thickness=3)
 
     return joined_image
-
-

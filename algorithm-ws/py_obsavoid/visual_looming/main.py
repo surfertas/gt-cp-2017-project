@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 
 import match_detector as orb  # code from assignment 7
-from visualizer import show_kp, drawMatches
+from visualizer import draw_output, show_kp, drawMatches
 from obstacle_detector import ObstacleDetector
 
 
@@ -54,16 +54,25 @@ class TrackingTest(object):
         """
         # NOTE: image 1 = current image, image 2 = previous image.
         self.orb.findMatchesBetweenImages(img, self.template)
+        # for m in self.orb.matches:
+        #    c, r = self.orb.kp1[m.queryIdx].pt
+        # cv2.circle(output, (int(c),int(r)), 5, (255,255,255), thickness=-1)
+
         self.orb.discard_miss_match(threshold=self.dist_thresh)
         self.orb.discard_size_thresh()
 
         detector = ObstacleDetector(
             img, self.template, self.orb.matches, self.orb.kp1, self.orb.kp2)
         detector.confirm_scale()
+
         if detector.matches:
+            output = img[:, :]
             obstacle = detector.get_obstacle_position()
             cv2.circle(img, obstacle, 5, (0, 255, 0), thickness=5)
             cv2.circle(self.template, obstacle, 5, (0, 255, 0), thickness=5)
+
+            draw_output(
+                self.orb.matches, detector.matches, self.orb.kp1, output)
 
         # uncomment if want to use drawmatches from a7
         # annotated_matches = self.visual(self.template, self.orb.kp1, img,
@@ -91,7 +100,7 @@ class TrackingTest(object):
             return None
 
 
-def test_on_camera(dist_thresh, debug=False):
+def test_on_camera(dist_thresh, skip, debug=False):
     """ use this setup method to setup everything on the live camera input"""
     # test = TrackingTest(0, orb.OrbTracker, drawMatches,
     # dist_thresh=dist_thresh, debug=True)
@@ -101,6 +110,8 @@ def test_on_camera(dist_thresh, debug=False):
     test.skip_frames(10)
     test.update_template()
     while test.cap.isOpened():
+        test.skip_frames(skip)
+
         img = test.grab_next_img()
         match = test.process_next_image(img)
 
@@ -118,13 +129,15 @@ def test_on_camera(dist_thresh, debug=False):
     cv2.destroyAllWindows()
 
 
-def test_on_video(dist_thresh, debug=False):
+def test_on_video(dist_thresh, skip, debug=False):
     """use this setup method to setup everything on the video file input"""
     test = TrackingTest('./test_vids/1.mp4', orb.OrbTracker,
                         cv2.drawMatches, dist_thresh=dist_thresh, debug=True)
     test.skip_frames(10)
     test.update_template()
     while test.cap.isOpened():
+        test.skip_frames(skip)
+
         img = test.grab_next_img()
         match = test.process_next_image(img)
         cv2.imshow("matches", match)
@@ -145,7 +158,10 @@ if __name__ == "__main__":
                         help='Sets the distance threshold for match filtering')
     parser.add_argument('--debug', '-d', type=str, default=False,
                         help='Sets real time camera.')
+    parser.add_argument('--skip', '-s', type=int, default=0,
+                        help='Sets number of frames to skip for processing')
+
     args = parser.parse_args()
 
-    # test_on_camera(args.thresh, args.debug)
-    test_on_video(args.thresh, args.debug)
+    # test_on_camera(args.thresh, args.skip, args.debug)
+    test_on_video(args.thresh, args.skip, args.debug)
