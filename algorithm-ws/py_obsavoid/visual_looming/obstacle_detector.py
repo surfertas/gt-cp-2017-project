@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """
-The scale expansion detector algorithm. This algorithm matches,
-filters, and calculates, the expansion of relevant ORB features in consecutive
-images.
+The obstacle detector uses the scale expansion detector algorithm. 
+This algorithm matches, filters, and calculates, the expansion of relevant 
+ORB features in consecutive images.
 """
 import os
 import argparse
@@ -16,11 +16,10 @@ from scipy.misc import imresize
 from algo_util import show_kp
 
 
-# import template matching algorithm
 
 
 
-class ScaleExpansionDetector(object):
+class ObstacleDetector(object):
     def __init__(self, test=False):
         self.test = test
         self.pair2int = lambda pt: (int(pt[0]), int(pt[1]))
