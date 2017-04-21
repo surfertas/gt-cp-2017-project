@@ -23,7 +23,7 @@ class TrackingTest(object):
         self.setup_camera()
         self.template_cap_time = None
 
-    def setup_camera(self, width=640, height=480, fps=10):
+    def setup_camera(self, width=1280, height=720, fps=10):
         """ to configure for specific cam. Defaults set for Intel Realsense camera """
         # Slow down fps for debugging.
         fps = 1 if self.debug else fps
@@ -41,6 +41,7 @@ class TrackingTest(object):
             ret, temp = self.cap.read()
         if ret:
             self.template = temp
+            print "template captured"
             return self.template
         else:
             print "template update failed"
@@ -76,6 +77,7 @@ class TrackingTest(object):
             speed = float("{0:.2f}".format(speed)) * 100
 
             output = img[:, :]
+            # output = self.template[:, :]
             # add speed overlay
             font = cv2.FONT_HERSHEY_SIMPLEX
 
@@ -144,7 +146,7 @@ def test_on_camera(dist_thresh, fps, debug=False):
                 interpolation=cv2.INTER_AREA)
             cv2.imshow("matches", resized_match)
         elapsed = timeit.default_timer() - start_time
-        print "time for loop ", elapsed
+        # print "time for loop ", elapsed
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     test.cap.release()
@@ -200,6 +202,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # for camera testing pass fps of camera instead of skip
-    test_on_camera(args.thresh, args.skip, args.debug)
+    # test_on_camera(args.thresh, args.skip, args.debug)
     #
-    # test_on_video(args.video, args.thresh, args.skip, args.debug)
+    test_on_video(args.video, args.thresh, args.skip, args.debug)
