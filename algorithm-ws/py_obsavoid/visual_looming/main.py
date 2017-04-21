@@ -126,9 +126,9 @@ def test_on_camera(dist_thresh, skip, debug=False):
     cv2.destroyAllWindows()
 
 
-def test_on_video(dist_thresh, skip, debug=False):
+def test_on_video(video, dist_thresh, skip, debug=False):
     """use this setup method to setup everything on the video file input"""
-    test = TrackingTest('./test_vids/1.mp4', orb.OrbTracker,
+    test = TrackingTest('./test_vids/{}'.format(video), orb.OrbTracker,
                         cv2.drawMatches, dist_thresh=dist_thresh, debug=True)
     test.skip_frames(10)
     test.update_template()
@@ -157,8 +157,10 @@ if __name__ == "__main__":
                         help='Sets real time camera.')
     parser.add_argument('--skip', '-s', type=int, default=0,
                         help='Sets number of frames to skip for processing')
+    parser.add_argument('--video', '-v', type=str, default="1.mp4",
+                        help='Specifies the video to use for testing.')
 
     args = parser.parse_args()
 
     # test_on_camera(args.thresh, args.skip, args.debug)
-    test_on_video(args.thresh, args.skip, args.debug)
+    test_on_video(args.video, args.thresh, args.skip, args.debug)
