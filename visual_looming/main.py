@@ -5,16 +5,19 @@ import numpy as np
 import cv2
 
 import match_detector as orb  # code from assignment 7
-from visualizer import draw_output, show_kp, drawMatches
+from visualizer import draw_output, draw_matches
 from obstacle_detector import ObstacleDetector
 
 
 class TrackingTest(object):
-    """extends all pieces needed for experimentation so that any test case can be implemented"""
+
+    """ Extends all pieces needed for experimentation.
+
+    Test case for video, consecutive images can be implemented.
+    """
 
     def __init__(self, cap_dev, tracker, visualation, dist_thresh, debug=False):
         self.cap = cv2.VideoCapture(cap_dev)
-        # todo come down to standard specification of tracker class
         self.orb = tracker()
         self.template = None
         self.visual = visualation
@@ -24,19 +27,28 @@ class TrackingTest(object):
         self.template_cap_time = None
 
     def setup_camera(self, width=1280, height=720, fps=10):
-        """ to configure for specific cam. Defaults set for Intel Realsense camera """
+        """ To configure for specific cam.
+
+        Params:
+            width: Width dimension of video capture.
+            height: Height dimension of video capture.
+            fps: Frame per seconds attribute setting for video capture.
+        Note: Defaults set for Intel Realsense camera
+        """
         # Slow down fps for debugging.
         fps = 1 if self.debug else fps
 
-        self.cap.set(3, width)  # width
+        self.cap.set(3, width)   # width
         self.cap.set(4, height)  # height
-        self.cap.set(5, fps)  # fps
-        self.cap.set(16, 1)  # convert RGB
+        self.cap.set(5, fps)     # fps
+        self.cap.set(16, 1)      # convert RGB
 
     def update_template(self):
-        """this function would be useful for real time update
-         of the template and multi instance version of application"""
+        """ Updates the template captured from video.
 
+        Note: this function would be useful for real time update
+        of the template and multi instance version of application.
+        """
         for i in range(20):
             ret, temp = self.cap.read()
         if ret:
@@ -48,14 +60,16 @@ class TrackingTest(object):
             return None
 
     def process_next_image(self, img):
+        """ Process input image and template to get matches using tracking algorithm.
+
+        Params:
+            img: New image frame.
+        Returns:
+            Matched image with the template
+
+        Note: image 1 = current image, image 2 = previous image.
         """
-        Process input image and template to get matches using tracking algorithm.
-        :param new image frame
-        :return Matched image with the template
-        For now let's use the drawMatches from a7. Going forward we will need better method.
-        """
-        # NOTE: image 1 = current image, image 2 = previous image.
-        self.orb.findMatchesBetweenImages(img, self.template)
+        self.orb.find_matches_between(img, self.template)
 
         self.orb.discard_miss_match(threshold=self.dist_thresh)
         self.orb.discard_size_thresh()
@@ -66,8 +80,10 @@ class TrackingTest(object):
 
         if detector.matches:
             # find speed of approaching object.
-            # assuming that object becomes 1.5 times larger when comes from 3 meters to 2 meters.
-            time_since_template_captured = timeit.default_timer() - self.template_cap_time
+            # assuming that object becomes 1.5 times larger when comes from 3
+            # meters to 2 meters.
+            time_since_template_captured = timeit.default_timer(
+            ) - self.template_cap_time
             avg_scale = np.mean(np.array(detector.obstacle_scale, dtype=float))
             dist_traveled = avg_scale / 1.5
             speed = dist_traveled / time_since_template_captured
@@ -78,7 +94,9 @@ class TrackingTest(object):
             # add speed overlay
             font = cv2.FONT_HERSHEY_SIMPLEX
 
-            output = cv2.putText(output, 'Obstacle_speed: ' + str(speed) + " cm/s ", (10, 30), font, 1, (200, 255, 155),
+            output = cv2.putText(
+                output, 'Obstacle_speed: ' +
+                    str(speed) + " cm/s ", (10, 30), font, 1, (200, 255, 155),
                                  2,
                                  cv2.LINE_AA)
 
@@ -89,14 +107,7 @@ class TrackingTest(object):
             draw_output(
                 self.orb.matches, detector.matches, self.orb.kp1, output)
 
-        # uncomment if want to use drawmatches from a7
-        # annotated_matches = self.visual(self.template, self.orb.kp1, img,
-        # self.orb.kp2, self.orb.matches).astype(np.uint8)
-
-        # uncomment if want to use cv2.drawmatches
-        # http://docs.opencv.org/3.0-beta/modules/features2d/doc/drawing_function_of_keypoints_and_matches.html
         annotated_matches = None
-
         annotated_matches = self.visual(
             img, self.orb.kp1, self.template, self.orb.kp2, detector.matches,
             annotated_matches, flags=2)
@@ -104,11 +115,20 @@ class TrackingTest(object):
         return annotated_matches
 
     def skip_frames(self, frames):
-        """useful for skipping first few frames from the webcam"""
+        """ Set to skip few frames from the webcam.
+
+        Params:
+            frames: Number of frames to skip.
+        """
         for i in range(frames):
             ret, template = self.cap.read()
 
     def grab_next_img(self):
+        """ Function to grab next image from self.cap.
+
+        Returns:
+            frame: Returns capture frame, else None.
+        """
         ret, frame = self.cap.read()
         if ret:
             return frame
@@ -116,13 +136,18 @@ class TrackingTest(object):
             return None
 
 
+# Testing environments:
+#   Available environments are camera at device 0, and video (mp4, etc).
 def test_on_camera(dist_thresh, fps, debug=False):
-    """ use this setup method to setup everything on the live camera input"""
-    # test = TrackingTest(0, orb.OrbTracker, drawMatches,
-    # dist_thresh=dist_thresh, debug=True)
+    """ Use this setup method to setup everything on the live camera input.
+
+    Params:
+        dist_thresh: Threshold passed to orb tracker to filter matches.
+        fps: Frames per second passed to video capture.
+        debug: Set to True if in debug environment.
+    """
     test = TrackingTest(
         0, orb.OrbTracker, cv2.drawMatches, dist_thresh=dist_thresh, debug=True)
-    # test = TrackingTest(0, orb.OrbTracker, show_kp, dist_thresh=dist_thresh)
     test.skip_frames(10)
     test.update_template()
     test.template_cap_time = timeit.default_timer()
@@ -150,7 +175,14 @@ def test_on_camera(dist_thresh, fps, debug=False):
 
 
 def test_on_video(video, dist_thresh, skip, debug=False):
-    """use this setup method to setup everything on the video file input"""
+    """ Setup method to setup everything on the video file input
+
+     Params:
+        video: Video file to read.
+        dist_thresh: Threshold passed to orb tracker to filter matches.
+        skip: # of frames to skip for processing.
+        debug: Set to True if in debug environment.
+    """
     test = TrackingTest('./test_vids/{}'.format(video), orb.OrbTracker,
                         cv2.drawMatches, dist_thresh=dist_thresh, debug=True)
     test.skip_frames(10)
@@ -177,10 +209,6 @@ def test_on_video(video, dist_thresh, skip, debug=False):
             break
     test.cap.release()
     cv2.destroyAllWindows()
-
-
-def test_on_set_of_images(dist_thresh, debug=False):
-    pass
 
 
 if __name__ == "__main__":

@@ -13,10 +13,11 @@ import numpy as np
 import scipy as sp
 from scipy.misc import imresize
 
-from algo_util import show_kp
-
 
 class ObstacleDetector(object):
+
+    """ Detects on-coming obstacles applicable to monocular cameras. """
+
     def __init__(self, curimg, prvimg, matches, kp1, kp2, test=False):
         self.test = test
         self.img_cur = curimg
@@ -66,7 +67,7 @@ class ObstacleDetector(object):
         if (r - size < 0
             or r + size > rbnd
             or c - size < 0
-            or c + size > cbnd):
+                or c + size > cbnd):
             return False
         return True
 
@@ -102,7 +103,8 @@ class ObstacleDetector(object):
 
                 # trntemplate = imresize(trntemplate1, scale)
                 trntemplate = cv2.resize(src=trntemplate1,
-                                         dsize=(int(trntemplate1.shape[1] * scale), int(trntemplate1.shape[0] * scale)),
+                                         dsize=(int(trntemplate1.shape[1] * scale), int(
+                                             trntemplate1.shape[0] * scale)),
                                          interpolation=cv2.INTER_AREA)
 
                 (
@@ -113,7 +115,9 @@ class ObstacleDetector(object):
 
                 # qrytemplate = imresize(qrytemplate, (trntemplate.shape))
                 qrytemplate = cv2.resize(src=qrytemplate,
-                                         dsize=(trntemplate.shape[0], trntemplate.shape[1]),
+                                         dsize=(
+                                             trntemplate.shape[
+                                                 0], trntemplate.shape[1]),
                                          interpolation=cv2.INTER_AREA)
 
                 # RMS error between two images
@@ -137,6 +141,7 @@ class ObstacleDetector(object):
     def get_obstacle_position(self):
         """ Takes the average of the keypoint locations and returns the obstacle
         location as single point.
+
         Returns:    Obstacle point.
         """
         rtmp, ctmp = [], []

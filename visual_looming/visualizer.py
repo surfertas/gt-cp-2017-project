@@ -5,6 +5,7 @@ import numpy as np
 
 def draw_output(all_matches, obs_matches, kp1, output):
     """ Writes output image to file.
+
     Params:
         all_matches: All matches found from Orb matcher.
         obs_matches: Matches after matches have been filtered.
@@ -21,11 +22,12 @@ def draw_output(all_matches, obs_matches, kp1, output):
         cv2.circle(output, (int(c), int(r)), int(
             kp1[m.queryIdx].size), (0, 0, 255), thickness=1)
 
-    cv2.imwrite("output.png", output)
+    cv2.imwrite("./output/output.png", output)
 
 
-def show_kp(image1, kp1, image2, kp2, matches):
+def show_kp(image1, kp1, image2, kp2, matches, tname, output_folder):
     """ Creates grid to show top 10 keypoints between two images.
+
     Params:
         image1: First image.
         kp1: Keypoints associated with image1.
@@ -87,27 +89,22 @@ def show_kp(image1, kp1, image2, kp2, matches):
             grid[(d * i):(d * i + d), :d, channel] = tmp1
             grid[(d * i):(d * i + d), d:, channel] = tmp2
 
-            # cv2.imwrite(
-            #     os.path.join(output_folder, 'grid_{}.jpg'.format(tname)), grid)
-            # print grid.shape, grid.dtype
-            return grid.astype(np.uint8)
+            cv2.imwrite(
+                os.path.join(output_folder, 'grid_{}.jpg'.format(tname)), grid)
 
 
-def drawMatches(image_1, image_1_keypoints, image_2, image_2_keypoints, matches):
+def draw_matches(image_1, image_1_keypoints, image_2, image_2_keypoints, matches):
     """ Draws the matches between the image_1 and image_2.
+    (Credit: GT CP2017 course provided source)
 
-    Args:
-    image_1 (numpy.ndarray): The first image (can be color or grayscale).
-    image_1_keypoints (list): The image_1 keypoints, the elements are of type
-                              cv2.KeyPoint.
-    image_2 (numpy.ndarray): The image to search in (can be color or grayscale)
-    image_2_keypoints (list): The image_2 keypoints, the elements are of type
-                              cv2.KeyPoint.
+    Params:
+        image_1: The first image (can be color or grayscale).
+        image_1_keypoints: The image_1 keypoints.
+        image_2: The image to search in (can be color or grayscale)
+        image_2_keypoints: The image_2 keypoints.
 
     Returns:
-    output (numpy.ndarray): An output image that draws lines from the input
-                            image to the output image based on where the
-                            matching features are.
+        output: Image with a line drawn between matched keypoints.
     """
     # Compute number of channels.
     num_channels = 1
