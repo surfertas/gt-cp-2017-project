@@ -8,4 +8,5 @@ script:
   - python visual_looming/tests.py
 
 before_script:
-  - wget opencv_python‑3.1.0‑cp27‑cp27m‑win_amd64.whl
+  - sudo add-apt-repository python-opencv
+  - sudo apt-get update
