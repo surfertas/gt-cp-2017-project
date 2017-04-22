@@ -20,7 +20,7 @@ def draw_output(all_matches, obs_matches, kp1, output):
     for m in obs_matches:
         c, r = kp1[m.queryIdx].pt
         cv2.circle(output, (int(c), int(r)), int(
-            kp1[m.queryIdx].size), (0, 0, 255), thickness=1)
+            kp1[m.queryIdx].size), (0, 0, 255), thickness=3)
 
     cv2.imwrite("./output/output.png", output)
 
