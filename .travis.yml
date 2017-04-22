@@ -7,5 +7,6 @@ install:
 script:
   - python visual_looming/tests.py
 before_script:
-  - sudo add-apt-repository python-opencv
+  - sudo apt-get install libopencv-dev python-opencv
   - sudo apt-get update
+  - export PYTHONPATH=$PYTHONPATH:/usr/lib/python2.7/dist-packages
