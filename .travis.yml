@@ -9,4 +9,4 @@ script:
 before_script:
   - sudo apt-get install libopencv-dev python-opencv libblas-dev liblapack-dev
   - sudo apt-get update
-  - export PYTHONPATH=$PYTHONPATH:/usr/lib/python2.7/dist-packages
+  - export PYTHONPATH=$PYTHONPATH:/usr/lib/python2.7/site-packages
