@@ -7,6 +7,3 @@ install:
 script:
   - python visual_looming/tests.py
 
-before_script:
-  - sudo add-apt-repository python-opencv
-  - sudo apt-get update
