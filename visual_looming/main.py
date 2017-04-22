@@ -185,22 +185,24 @@ def test_on_video(video, dist_thresh, skip, debug=False):
     """
     test = TrackingTest('./test_vids/{}'.format(video), orb.OrbTracker,
                         cv2.drawMatches, dist_thresh=dist_thresh, debug=True)
-    test.skip_frames(10)
+    # test.skip_frames(10)
     test.update_template()
 
     # avg_fps = 0
     # fps_records = []
     test.template_cap_time = timeit.default_timer()
-
+    elapsed = 0
+    fps = 10
     while test.cap.isOpened():
-        test.skip_frames(skip)
-        # start_time = timeit.default_timer()
+        test.skip_frames(int(fps * elapsed))
+        # test.skip_frames(skip)
+        start_time = timeit.default_timer()
 
         img = test.grab_next_img()
         match = test.process_next_image(img)
         cv2.imshow("matches", match)
 
-        # elapsed = timeit.default_timer() - start_time
+        elapsed = timeit.default_timer() - start_time
         # fps_records.append(elapsed)
         # avg_fps = 1.0 / (np.mean(np.array(fps_records, dtype=np.float)))
         # print "time for loop ", elapsed, "avg fps ", avg_fps
