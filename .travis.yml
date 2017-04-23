@@ -9,7 +9,7 @@ script:
 before_script:
   # update aptitude
   - sudo apt-get update
-  - sudo apt-get install -y python-opencv
+  - sudo apt-get install -y python-opencv python-scipy python-numpy
 
   # help python importing cv and/or cv2
   - export PYTHONPATH=$PYTHONPATH:/usr/lib/pymodules/python2.7
